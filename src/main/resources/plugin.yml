@@ -1,0 +1,42 @@
+## Plugin YAML file
+name: CastleConquer
+version: 0.0.1-ALPHA
+description: Defend or conquer the castle, and die if needed!
+database: false
+website: www.alternacraft.esy.es
+
+author: AlternaCraft
+
+main: com.alternacraft.castleconquer.Main.CastleConquer
+
+commands:
+    castleconquer:
+        description: Main command of the plugin
+        usage: /<command>
+        aliases: cc
+        permission: cc.info
+
+permissions:
+   cc.*:
+     description: Consigue acceso a todos los comandos de CastleConquer
+     children:
+       rt.info: true
+       rt.sign: true
+       rt.config: true
+       rt.purge: true       
+       rt.reload: true       
+   cc.info:
+     description: Muestra la informacion del plugin
+     default: true
+   cc.sign:
+     description: Configura los carteles
+     default: true
+   cc.config:
+     description: Configura el plugin
+     default: true
+   cc.purge:
+     description: Limpia la configuracion
+     default: true
+   cc.reload:
+     description: Recarga el plugin
+     default: true
