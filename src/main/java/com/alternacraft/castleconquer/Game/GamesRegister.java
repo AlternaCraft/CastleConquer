@@ -16,11 +16,9 @@
  */
 package com.alternacraft.castleconquer.Game;
 
-import com.alternacraft.castleconquer.Teams.TeamMember;
 import java.util.ArrayList;
 import java.util.List;
 import org.bukkit.World;
-import org.bukkit.entity.Player;
 
 /**
  * This class contains all the game instances.
@@ -68,30 +66,6 @@ public final class GamesRegister {
         for (GameInstance game : games) {
             if (game.getWorld().getName().equals(world.getName())) {
                 return game;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Returns a game by player.
-     *
-     * @param player
-     * @return
-     */
-    public GameInstance seekGameByPlayer(Player player) {
-        for (GameInstance game : games) {
-            for (TeamMember member : game.getTeamsManager().getAttackers()
-                    .getMembers()) {
-                if (member.getUUID().equals(player.getUniqueId())) {
-                    return game;
-                }
-            }
-            for (TeamMember member : game.getTeamsManager().getDefenders()
-                    .getMembers()) {
-                if (member.getUUID().equals(player.getUniqueId())) {
-                    return game;
-                }
             }
         }
         return null;

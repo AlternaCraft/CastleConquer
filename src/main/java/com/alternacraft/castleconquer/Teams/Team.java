@@ -18,7 +18,6 @@ package com.alternacraft.castleconquer.Teams;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.bukkit.entity.Player;
 
 /**
  * This class is the main object of the teams.
@@ -42,7 +41,7 @@ public class Team {
      *
      * @return
      */
-    public final TeamType getType() {
+    public final TeamType getTeamType() {
         return type;
     }
 
@@ -52,6 +51,7 @@ public class Team {
      * @param member
      */
     public final void addMember(TeamMember member) {
+        member.defineTeam(this);
         members.add(member);
     }
 
@@ -61,22 +61,8 @@ public class Team {
      * @param member
      */
     public final void removeMember(TeamMember member) {
+        member.defineTeam(this);
         members.remove(member);
-    }
-
-    /**
-     * Checks if a player is a TeamMember instance.
-     *
-     * @param player
-     * @return
-     */
-    public final boolean playerIsTeamMember(Player player) {
-        for (TeamMember tm : members) {
-            if (tm.getUUID().equals(player.getUniqueId())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

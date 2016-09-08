@@ -26,8 +26,6 @@ import com.alternacraft.castleconquer.Langs.GameLanguageFile;
 import com.alternacraft.castleconquer.Langs.MainLanguageFile;
 import com.alternacraft.castleconquer.Main.Manager;
 import com.alternacraft.castleconquer.Teams.TeamMember;
-import java.util.UUID;
-import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -43,7 +41,7 @@ public class LeaveGameCommand implements ArgumentExecutor {
         } else {
             GamesRegister greg = Manager.getGamesRegister();
             Player player = (Player) cs;
-            GameInstance gi = greg.seekGameByPlayer(player);
+            GameInstance gi = GameInstance.getGameInstanceByPlayer(player);
 
             if (gi == null) {
                 MessageManager.sendCommandSender(
@@ -52,18 +50,12 @@ public class LeaveGameCommand implements ArgumentExecutor {
                         .getText(Localizer.getLocale(player))
                 );
             } else {
-                TeamMember tm = gi.getTeamsManager()
-                        .getTeamMemberByPlayer(player);
-                if (gi.getTeamsManager().isTeamMemberInAttackers(tm)) {
-                    gi.getTeamsManager().removeMemberFromAttackers(tm);
-                } else {
-                    gi.getTeamsManager().removeMemberFromDefenders(tm);
-                }
+                TeamMember tm = TeamMember.getTeamMemberFromPlayer(player);
+                tm.getTeam().removeMember(tm);
 
                 if (gi.isCountdownStarted()) {
                     gi.stopCountdown();
-                    for (UUID uid : gi.getPlayersInQueue()) {
-                        Player pl = Bukkit.getOfflinePlayer(uid).getPlayer();
+                    for (Player pl : gi.getPlayersInQueue()) {
                         MessageManager.sendPlayer(
                                 pl,
                                 GameLanguageFile.GAME_COUNTDOWN_PLAYER_LEFT_QUEUE

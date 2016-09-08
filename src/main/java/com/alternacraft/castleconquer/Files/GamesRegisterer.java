@@ -37,9 +37,25 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 public final class GamesRegisterer {
-    public final class GamesRegistererResult {
-        public boolean error;
-        public LangInterface message;
+    public class GameRegisterResult extends GameUnregisterResult {
+        public final GameInstance gameinstance;
+
+        public GameRegisterResult(GameInstance gi, LangInterface message,
+                boolean error) {
+            super(message, error);
+            this.gameinstance = gi;
+        }
+    }
+
+    public class GameUnregisterResult {
+        public final LangInterface message;
+        public final boolean error;
+
+        public GameUnregisterResult(LangInterface message,
+                boolean error) {
+            this.message = message;
+            this.error = error;
+        }
     }
 
     private final String folderPath;
@@ -59,19 +75,16 @@ public final class GamesRegisterer {
      * @param maxPlayersPerTeam
      * @return
      */
-    public GamesRegistererResult registerGame(World world,
+    public GameRegisterResult registerGame(World world,
             int maxPlayersPerTeam) {
-        GamesRegistererResult result = new GamesRegistererResult();
+        GameRegisterResult result = null;
 
         try {
             String worldUID = world.getUID().toString();
             File file = new File(folderPath + worldUID + ".yml");
             YamlConfiguration fileYAML = new YamlConfiguration();
 
-            if (file.exists()) {
-                result.error = true;
-                result.message = ManageLanguageFile.GAME_WORLD_ALREADY_REGISTERED;
-            } else {
+            if (!file.exists()) {
                 file.createNewFile();
 
                 fileYAML.options().header("Auto-generated game instance file\n"
@@ -85,10 +98,15 @@ public final class GamesRegisterer {
 
                 GameInstance gi = new GameInstance(world, maxPlayersPerTeam);
                 Manager.getGamesRegister().registerGame(gi);
+
+                result = new GameRegisterResult(null,
+                        ManageLanguageFile.GAME_WORLD_REGISTERED, true
+                );
             }
         } catch (IOException ex) {
-            result.error = true;
-            result.message = MainLanguageFile.EXCEPTION_ERROR;
+            result = new GameRegisterResult(null,
+                    MainLanguageFile.EXCEPTION_ERROR, true
+            );
             MessageManager.logError(ex.getMessage());
         }
 
@@ -101,15 +119,16 @@ public final class GamesRegisterer {
      * @param world
      * @return
      */
-    public GamesRegistererResult unregister(World world) {
+    public GameUnregisterResult unregister(World world) {
         String worldUID = world.getUID().toString();
         File file = new File(folderPath + worldUID + ".yml");
 
-        GamesRegistererResult result = new GamesRegistererResult();
+        GameUnregisterResult result;
 
         if (!file.exists()) {
-            result.error = true;
-            result.message = ManageLanguageFile.GAME_WORLD_NOT_REGISTERED;
+            result = new GameUnregisterResult(
+                    ManageLanguageFile.GAME_WORLD_NOT_REGISTERED, true
+            );
         } else {
             file.delete();
 
@@ -126,6 +145,10 @@ public final class GamesRegisterer {
             }
 
             Manager.getGamesRegister().unregisterGame(gi);
+
+            result = new GameUnregisterResult(
+                    ManageLanguageFile.GAME_WORLD_UNREGISTERED, true
+            );
         }
 
         return result;
@@ -241,8 +264,6 @@ public final class GamesRegisterer {
             return false;
         }
 
-        GamesRegistererResult result = new GamesRegistererResult();
-
         try {
             String worldUID = gi.getWorld().getUID().toString();
             File file = new File(folderPath + worldUID + ".yml");
@@ -305,10 +326,8 @@ public final class GamesRegisterer {
 
             return true;
         } catch (IOException ex) {
-            result.error = true;
-            result.message = MainLanguageFile.EXCEPTION_ERROR;
             MessageManager.logError(ex.getMessage());
+            return false;
         }
-        return true;
     }
 }

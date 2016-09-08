@@ -34,8 +34,8 @@ public enum MetadataValues {
     // <editor-fold defaultstate="collapsed" desc="Values">
     PLAYING("castleconquer:playing"),
     IN_QUEUE("castleconquer:in-queue"),
-    TEAM_MEMBER_TEAM("castleconquer:team-member-team"),
-    WORLD_GAME_INSTANCE("castleconquer:world-game-instance");
+    TEAM_MEMBER("castleconquer:team-member"),
+    GAME_INSTANCE("castleconquer:game-instance");
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Internal stuff">
@@ -62,7 +62,7 @@ public enum MetadataValues {
         for (World world : Bukkit.getWorlds()) {
             GameInstance gi = Manager.getGamesRegister().seekGameByWorld(world);
             if (gi != null) {
-                world.setMetadata(WORLD_GAME_INSTANCE.key,
+                world.setMetadata(GAME_INSTANCE.key,
                         new FixedMetadataValue(plugin, gi));
             }
         }

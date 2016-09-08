@@ -17,9 +17,11 @@
 package com.alternacraft.castleconquer.Commands;
 
 import com.alternacraft.aclib.MessageManager;
+import com.alternacraft.aclib.PluginBase;
 import com.alternacraft.aclib.commands.ArgumentExecutor;
 import com.alternacraft.aclib.langs.Langs;
 import com.alternacraft.aclib.utils.Localizer;
+import com.alternacraft.castleconquer.Data.MetadataValues;
 import com.alternacraft.castleconquer.Files.GamesRegisterer;
 import com.alternacraft.castleconquer.Langs.ManageLanguageFile;
 import com.alternacraft.castleconquer.Game.GamesRegister;
@@ -29,6 +31,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.Plugin;
 
 public final class UnregisterGameCommand implements ArgumentExecutor {
     @Override
@@ -97,10 +101,14 @@ public final class UnregisterGameCommand implements ArgumentExecutor {
     }
 
     private void unregister(CommandSender cs, World world) {
-        GamesRegisterer.GamesRegistererResult result = Manager
+        Plugin plugin = PluginBase.INSTANCE.plugin();
+
+        GamesRegisterer.GameUnregisterResult result = Manager
                 .getGamesRegisterer().unregister(world);
 
         if (!result.error) {
+            world.removeMetadata(MetadataValues.GAME_INSTANCE.key, plugin);
+
             if (cs instanceof Player) {
                 MessageManager.sendCommandSender(cs,
                         ManageLanguageFile.GAME_WORLD_UNREGISTERED

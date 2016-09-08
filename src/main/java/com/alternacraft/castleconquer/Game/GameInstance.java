@@ -34,6 +34,7 @@ import com.alternacraft.aclib.utils.StringsUtils;
 import com.alternacraft.castleconquer.Data.MetadataValues;
 import com.alternacraft.castleconquer.Langs.GameLanguageFile;
 import com.alternacraft.castleconquer.Main.CastleConquer;
+import com.alternacraft.castleconquer.Teams.Team.TeamType;
 import org.bukkit.block.Sign;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.Plugin;
@@ -47,8 +48,8 @@ public final class GameInstance {
     private final World world;
     private final TeamsManager teamsManager = new TeamsManager();
 
-    private List<UUID> playersInQueue = new ArrayList<>();
-    private List<UUID> playersInGame = new ArrayList<>();
+    private List<Player> playersInQueue = new ArrayList<>();
+    private List<Player> playersInGame = new ArrayList<>();
 
     private Block defendersFlag;
     private Block attackersFlag;
@@ -72,7 +73,7 @@ public final class GameInstance {
      *
      * @param player
      */
-    public final void addPlayerInGame(UUID player) {
+    public final void addPlayerInGame(Player player) {
         playersInGame.add(player);
     }
 
@@ -81,7 +82,7 @@ public final class GameInstance {
      *
      * @param player
      */
-    public final void removePlayerInGame(UUID player) {
+    public final void removePlayerInGame(Player player) {
         playersInGame.remove(player);
     }
 
@@ -92,8 +93,8 @@ public final class GameInstance {
      * @return
      */
     public final boolean isPlayerInGame(Player player) {
-        for (UUID pl : playersInGame) {
-            if (pl.equals(player.getUniqueId())) {
+        for (Player pl : playersInGame) {
+            if (pl.equals(player)) {
                 return true;
             }
         }
@@ -171,15 +172,16 @@ public final class GameInstance {
             return;
         }
 
+        CastleConquer plugin = (CastleConquer) PluginBase.INSTANCE.plugin();
+
         stopCountdown();
 
         matchStarted = true;
 
-        for (UUID uid : playersInQueue) {
-            Player player = Bukkit.getPlayer(uid);
-            TeamMember tm = teamsManager.getTeamMemberByPlayer(player);
+        for (Player player : playersInQueue) {
+            TeamMember tm = TeamMember.getTeamMemberFromPlayer(player);
             Location tpDestiny;
-            if (teamsManager.isTeamMemberInAttackers(tm)) {
+            if (tm.getTeam().getTeamType().equals(TeamType.ATTACKERS)) {
                 Location flagLoc = attackersFlag.getLocation();
                 org.bukkit.material.Banner bannerMat
                         = (org.bukkit.material.Banner) attackersFlag.getState()
@@ -310,7 +312,7 @@ public final class GameInstance {
      * @param player
      */
     public void addPlayerToQueue(Player player) {
-        playersInQueue.add(player.getUniqueId());
+        playersInQueue.add(player);
         updatePlayersInSign();
         if (playersInQueue.size() == maxPlayersPerTeam * 2) {
             startCountdown();
@@ -323,7 +325,7 @@ public final class GameInstance {
      * @param player
      */
     public void removePlayerFromQueue(Player player) {
-        playersInQueue.remove(player.getUniqueId());
+        playersInQueue.remove(player);
         updatePlayersInSign();
     }
 
@@ -334,7 +336,7 @@ public final class GameInstance {
      * @return
      */
     public boolean isPlayerInQueue(Player player) {
-        return playersInQueue.contains(player.getUniqueId());
+        return playersInQueue.contains(player);
     }
 
     /**
@@ -342,7 +344,7 @@ public final class GameInstance {
      *
      * @return
      */
-    public List<UUID> getPlayersInQueue() {
+    public List<Player> getPlayersInQueue() {
         return playersInQueue;
     }
 
@@ -368,8 +370,7 @@ public final class GameInstance {
 
         countdownStarted = true;
 
-        for (UUID uid : playersInQueue) {
-            Player player = Bukkit.getPlayer(uid);
+        for (Player player : playersInQueue) {
             MessageManager.sendPlayer(
                     player,
                     GameLanguageFile.GAME_STARTING_COUNTDOWN
@@ -388,8 +389,7 @@ public final class GameInstance {
                             return;
                         }
 
-                        for (UUID uid : playersInQueue) {
-                            Player player = Bukkit.getOfflinePlayer(uid).getPlayer();
+                        for (Player player : playersInQueue) {
                             MessageManager.sendPlayer(
                                     player,
                                     GameLanguageFile.GAME_COUNTDOWN
@@ -419,5 +419,19 @@ public final class GameInstance {
      */
     public boolean isCountdownStarted() {
         return countdownStarted;
+    }
+
+    /**
+     * Returns a GameInstance from a specified player.
+     *
+     * @param player
+     * @return
+     */
+    public final static GameInstance getGameInstanceByPlayer(Player player) {
+        if (player.hasMetadata(MetadataValues.GAME_INSTANCE.key)) {
+            return (GameInstance) player
+                    .getMetadata(MetadataValues.GAME_INSTANCE.key).get(0).value();
+        }
+        return null;
     }
 }

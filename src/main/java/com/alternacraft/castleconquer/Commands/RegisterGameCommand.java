@@ -17,10 +17,12 @@
 package com.alternacraft.castleconquer.Commands;
 
 import com.alternacraft.aclib.MessageManager;
+import com.alternacraft.aclib.PluginBase;
 import com.alternacraft.aclib.commands.ArgumentExecutor;
 import com.alternacraft.aclib.langs.Langs;
 import com.alternacraft.aclib.utils.Localizer;
 import com.alternacraft.aclib.utils.NumbersUtils;
+import com.alternacraft.castleconquer.Data.MetadataValues;
 import com.alternacraft.castleconquer.Files.GamesRegisterer;
 import com.alternacraft.castleconquer.Langs.MainLanguageFile;
 import com.alternacraft.castleconquer.Langs.ManageLanguageFile;
@@ -29,6 +31,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.Plugin;
 
 public final class RegisterGameCommand implements ArgumentExecutor {
     @Override
@@ -153,10 +157,15 @@ public final class RegisterGameCommand implements ArgumentExecutor {
     private void register(CommandSender cs, World world,
             int maxPlayersPerTeam) {
         GamesRegisterer greger = Manager.getGamesRegisterer();
-        GamesRegisterer.GamesRegistererResult result = greger
+        GamesRegisterer.GameRegisterResult result = greger
                 .registerGame(world, maxPlayersPerTeam);
 
+        Plugin plugin = PluginBase.INSTANCE.plugin();
+
         if (!result.error) {
+            world.setMetadata(MetadataValues.GAME_INSTANCE.key,
+                    new FixedMetadataValue(plugin, result.gameinstance));
+
             if (cs instanceof Player) {
                 MessageManager.sendCommandSender(cs,
                         ManageLanguageFile.GAME_WORLD_REGISTERED

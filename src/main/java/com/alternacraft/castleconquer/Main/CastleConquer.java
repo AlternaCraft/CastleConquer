@@ -39,7 +39,7 @@ public final class CastleConquer extends JavaPlugin {
         pb.init(this);
 
         // Initializes the manager, which initializes and manages all classes
-        Manager manager = new Manager(this);
+        new Manager(this);
 
         // Registers the plugin events
         getServer().getPluginManager().registerEvents(new GameSignHandler(this), this);
@@ -51,14 +51,5 @@ public final class CastleConquer extends JavaPlugin {
     public void onDisable() {
         // Sends the disabled message
         MessageManager.log("The plugin has been disabled!");
-    }
-
-    /**
-     * Returns the ACLIB plugin manager class.
-     *
-     * @return
-     */
-    public PluginBase getPluginManager() {
-        return pb;
     }
 }

@@ -32,8 +32,8 @@
         <!-- AlternaCraft LIB dependency -->
         <dependency>
             <groupId>com.alternacraft</groupId>
-            <artifactId>aclib</artifactId>    
-            <version>0.0.7-SNAPSHOT</version>      
+            <artifactId>aclib</artifactId>
+            <version>0.0.8-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

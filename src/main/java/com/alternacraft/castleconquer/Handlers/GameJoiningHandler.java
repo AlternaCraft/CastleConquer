@@ -44,6 +44,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import com.alternacraft.castleconquer.Langs.MainLanguageFile;
+import com.alternacraft.castleconquer.Teams.TeamsManager;
 
 /**
  * This class handles all the events in relation with joining a game, like
@@ -86,8 +87,14 @@ public final class GameJoiningHandler implements Listener {
 
                     if (greg.isRegistered(world)) {
                         GameInstance gi = (GameInstance) world.getMetadata(
-                                MetadataValues.WORLD_GAME_INSTANCE.key
+                                MetadataValues.GAME_INSTANCE.key
                         ).get(0).value();
+
+                        if (world.getMetadata(
+                                MetadataValues.GAME_INSTANCE.key
+                        ).isEmpty()) {
+                            System.out.println("empty");
+                        }
 
                         if (gi.getSign() != null) {
                             if (gi.getSign().getLocation().equals(block.getLocation())) {
@@ -182,7 +189,7 @@ public final class GameJoiningHandler implements Listener {
                 ItemStack clickedItem = event.getCurrentItem();
                 ItemMeta clickedItemMeta = clickedItem.getItemMeta();
                 GameInstance gi = (GameInstance) world.getMetadata(
-                        MetadataValues.WORLD_GAME_INSTANCE.key
+                        MetadataValues.GAME_INSTANCE.key
                 ).get(0).value();
                 Player player = (Player) event.getWhoClicked();
 
@@ -204,16 +211,18 @@ public final class GameJoiningHandler implements Listener {
     }
 
     private void joinToTeam(Player player, GameInstance gi, TeamType tt) {
-        TeamMember tm = new TeamMember(player.getUniqueId());
+        TeamMember tm = new TeamMember(player);
+        TeamsManager tman = gi.getTeamsManager();
+
         if (tt.equals(TeamType.ATTACKERS)) {
-            gi.getTeamsManager().addMemberToAttackers(tm);
+            tman.getAttackers().addMember(tm);
 
             MessageManager.sendPlayer(player,
                     GameLanguageFile.GAME_JOINED_AS_ATTACKER
                     .getText(Localizer.getLocale(player))
             );
         } else {
-            gi.getTeamsManager().addMemberToDefenders(tm);
+            tman.getDefenders().addMember(tm);
 
             MessageManager.sendPlayer(player,
                     GameLanguageFile.GAME_JOINED_AS_DEFENDER

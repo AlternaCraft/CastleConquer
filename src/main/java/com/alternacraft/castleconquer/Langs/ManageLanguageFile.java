@@ -78,7 +78,7 @@ public enum ManageLanguageFile implements LangInterface {
         String value = (this.locales.get(lang) == null)
                 ? this.locales.get(Langs.EN) : this.locales.get(lang);
 
-        String v = LangManager.getDefaultText(lang, this);
+        String v = LangManager.getValueFromFile(lang, this);
 
         return (v == null) ? value : v;
     }
