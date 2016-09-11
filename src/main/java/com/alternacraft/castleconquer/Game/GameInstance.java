@@ -21,22 +21,22 @@ import com.alternacraft.castleconquer.Teams.TeamMember;
 import com.alternacraft.castleconquer.Teams.TeamsManager;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import com.alternacraft.aclib.PluginBase;
+import com.alternacraft.aclib.langs.Langs;
 import com.alternacraft.aclib.utils.Localizer;
 import com.alternacraft.aclib.utils.LocationUtils;
 import com.alternacraft.aclib.utils.StringsUtils;
 import com.alternacraft.castleconquer.Data.MetadataValues;
+import com.alternacraft.castleconquer.Files.GamesRegisterer;
 import com.alternacraft.castleconquer.Langs.GameLanguageFile;
 import com.alternacraft.castleconquer.Main.CastleConquer;
+import com.alternacraft.castleconquer.Main.Manager;
 import com.alternacraft.castleconquer.Teams.Team.TeamType;
 import org.bukkit.block.Sign;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.Plugin;
 
 /**
@@ -45,6 +45,8 @@ import org.bukkit.plugin.Plugin;
  * @author AlternaCraft
  */
 public final class GameInstance {
+    private final CastleConquer plugin = (CastleConquer) Manager.getPlugin();
+
     private final World world;
     private final TeamsManager teamsManager = new TeamsManager();
 
@@ -69,11 +71,20 @@ public final class GameInstance {
     }
 
     /**
+     * Returns the game instance world.
+     *
+     * @return
+     */
+    public final World getWorld() {
+        return world;
+    }
+
+    /**
      * Defines a player into the game.
      *
      * @param player
      */
-    public final void addPlayerInGame(Player player) {
+    public final void addPlayerToGame(Player player) {
         playersInGame.add(player);
     }
 
@@ -82,23 +93,66 @@ public final class GameInstance {
      *
      * @param player
      */
-    public final void removePlayerInGame(Player player) {
+    public final void removePlayerFromGame(Player player) {
         playersInGame.remove(player);
+        TeamMember tm = (TeamMember) player
+                .getMetadata(MetadataValues.TEAM_MEMBER.key).get(0).value();
+        if (matchStarted && tm.getTeam().getMembers().isEmpty()) {
+            endMatch(tm.getTeam().getOpponentTeam().getTeamType());
+        }
     }
 
     /**
-     * Checks if a player is into the game.
+     * Adds a player to game queue.
+     *
+     * @param player
+     */
+    public void addPlayerToQueue(Player player) {
+        playersInQueue.add(player);
+        updateSignData();
+        System.out.println(playersInQueue.size());
+        System.out.println(maxPlayersPerTeam * 2);
+        if (playersInQueue.size() == maxPlayersPerTeam * 2) {
+            startCountdown();
+        }
+    }
+
+    /**
+     * Removes a player from game queue.
+     *
+     * @param player
+     */
+    public void removePlayerFromQueue(Player player) {
+        playersInQueue.remove(player);
+        updateSignData();
+    }
+
+    /**
+     * Checks if a player is in queue.
      *
      * @param player
      * @return
      */
-    public final boolean isPlayerInGame(Player player) {
-        for (Player pl : playersInGame) {
-            if (pl.equals(player)) {
-                return true;
-            }
-        }
-        return false;
+    public boolean isPlayerInQueue(Player player) {
+        return playersInQueue.contains(player);
+    }
+
+    /**
+     * Returns all players in queue.
+     *
+     * @return
+     */
+    public List<Player> getPlayersInQueue() {
+        return playersInQueue;
+    }
+
+    /**
+     * Returns all players in game.
+     *
+     * @return
+     */
+    public List<Player> getPlayersInGame() {
+        return playersInGame;
     }
 
     /**
@@ -156,31 +210,67 @@ public final class GameInstance {
     }
 
     /**
-     * Returns the game instance world.
+     * Declares this game instance initialized, ready to be played.
+     */
+    public void initialize() {
+        this.initialized = true;
+        updateSignData();
+    }
+
+    /**
+     * Declares this game instance uninitialized, not ready to be played.
+     */
+    public void uninitialize() {
+        this.initialized = false;
+        updateSignData();
+    }
+
+    /**
+     * Returns if this game instance is initialized.
      *
      * @return
      */
-    public final World getWorld() {
-        return world;
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    /**
+     * Checks if this game instance can be initialized.
+     *
+     * @return
+     */
+    public boolean canInitialize() {
+        return (defendersFlag != null || attackersFlag != null);
+    }
+
+    /**
+     * Sets the value of match started boolean attribute.
+     *
+     * @param value
+     */
+    public void setMatchStarted(boolean value) {
+        this.matchStarted = value;
     }
 
     /**
      * Starts a match in this game instance.
      */
     public void startMatch() {
+        GamesRegisterer greger = Manager.getGamesRegisterer();
+
         if (matchStarted) {
             return;
         }
-
-        CastleConquer plugin = (CastleConquer) PluginBase.INSTANCE.plugin();
 
         stopCountdown();
 
         matchStarted = true;
 
         for (Player player : playersInQueue) {
-            TeamMember tm = TeamMember.getTeamMemberFromPlayer(player);
+            TeamMember tm = (TeamMember) player
+                    .getMetadata(MetadataValues.TEAM_MEMBER.key).get(0).value();
             Location tpDestiny;
+
             if (tm.getTeam().getTeamType().equals(TeamType.ATTACKERS)) {
                 Location flagLoc = attackersFlag.getLocation();
                 org.bukkit.material.Banner bannerMat
@@ -213,9 +303,6 @@ public final class GameInstance {
             }
             player.teleport(tpDestiny);
 
-            player.setMetadata(MetadataValues.PLAYING.key,
-                    new FixedMetadataValue(PluginBase.INSTANCE.plugin(), true));
-
             MessageManager.sendPlayer(
                     player,
                     GameLanguageFile.GAME_STARTED
@@ -225,17 +312,50 @@ public final class GameInstance {
 
         playersInGame.addAll(playersInQueue);
         playersInQueue.clear();
+        greger.saveGameInstance(this);
     }
 
     /**
      * Ends the match in this game instance.
+     *
+     * @param winnerType
      */
-    public void endMatch() {
+    public void endMatch(TeamType winnerType) {
+        GamesRegisterer greger = Manager.getGamesRegisterer();
+
         if (!matchStarted) {
             return;
         }
 
         matchStarted = false;
+        GameLanguageFile message;
+
+        if (winnerType.equals(TeamType.ATTACKERS)) {
+            message = GameLanguageFile.GAME_ATTACKERS_WON;
+        } else {
+            message = GameLanguageFile.GAME_DEFENDERS_WON;
+        }
+
+        for (Player player : playersInGame) {
+            player.teleport(player.getWorld().getSpawnLocation());
+            MessageManager.sendPlayer(
+                    player,
+                    GameLanguageFile.GAME_FINISHED
+                    .getText(Localizer.getLocale(player))
+            );
+            MessageManager.sendPlayer(
+                    player,
+                    message.getText(Localizer.getLocale(player))
+            );
+
+            player.removeMetadata(MetadataValues.GAME_INSTANCE.key, plugin);
+            player.removeMetadata(MetadataValues.TEAM_MEMBER.key, plugin);
+        }
+
+        playersInGame.clear();
+        greger.saveGameInstance(this);
+
+        updateSignData();
     }
 
     /**
@@ -257,38 +377,6 @@ public final class GameInstance {
     }
 
     /**
-     * Declares this game instance initialized, ready to be played.
-     */
-    public void initialize() {
-        this.initialized = true;
-    }
-
-    /**
-     * Declares this game instance uninitialized, not ready to be played.
-     */
-    public void uninitialize() {
-        this.initialized = false;
-    }
-
-    /**
-     * Returns if this game instance is initialized.
-     *
-     * @return
-     */
-    public boolean isInitialized() {
-        return initialized;
-    }
-
-    /**
-     * Checks if this game instance can be initialized.
-     *
-     * @return
-     */
-    public boolean canInitialize() {
-        return (defendersFlag != null || attackersFlag != null);
-    }
-
-    /**
      * Defines a sign block as game instance sign.
      *
      * @param sign
@@ -307,55 +395,21 @@ public final class GameInstance {
     }
 
     /**
-     * Adds a player to game queue.
-     *
-     * @param player
-     */
-    public void addPlayerToQueue(Player player) {
-        playersInQueue.add(player);
-        updatePlayersInSign();
-        if (playersInQueue.size() == maxPlayersPerTeam * 2) {
-            startCountdown();
-        }
-    }
-
-    /**
-     * Removes a player from game queue.
-     *
-     * @param player
-     */
-    public void removePlayerFromQueue(Player player) {
-        playersInQueue.remove(player);
-        updatePlayersInSign();
-    }
-
-    /**
-     * Checks if a player is in queue.
-     *
-     * @param player
-     * @return
-     */
-    public boolean isPlayerInQueue(Player player) {
-        return playersInQueue.contains(player);
-    }
-
-    /**
-     * Returns all players in queue.
-     *
-     * @return
-     */
-    public List<Player> getPlayersInQueue() {
-        return playersInQueue;
-    }
-
-    /**
      * Updates the players information in the game instance sign.
      */
-    public void updatePlayersInSign() {
-        Sign sign = (Sign) gameInstanceSign.getState();
-        sign.setLine(3, StringsUtils.translateColors("&d"
-                + playersInQueue.size() + "&5/" + maxPlayersPerTeam * 2));
-        sign.update();
+    public void updateSignData() {
+        if (gameInstanceSign != null) {
+            Sign sign = (Sign) gameInstanceSign.getState();
+            if (initialized) {
+                sign.setLine(3, StringsUtils.translateColors("&d"
+                        + playersInQueue.size() + "&5/" + maxPlayersPerTeam * 2));
+            } else {
+                sign.setLine(3, StringsUtils.translateColors(
+                        GameLanguageFile.GAME_SIGN_TEXT_UNINITIALIZED
+                        .getText(Langs.EN)));
+            }
+            sign.update();
+        }
     }
 
     /**
@@ -407,8 +461,9 @@ public final class GameInstance {
      */
     public void stopCountdown() {
         if (countdownStarted) {
-            CastleConquer plugin = (CastleConquer) PluginBase.INSTANCE.plugin();
             plugin.getServer().getScheduler().cancelTask(countdownSchedule);
+
+            countdownStarted = false;
         }
     }
 
@@ -419,19 +474,5 @@ public final class GameInstance {
      */
     public boolean isCountdownStarted() {
         return countdownStarted;
-    }
-
-    /**
-     * Returns a GameInstance from a specified player.
-     *
-     * @param player
-     * @return
-     */
-    public final static GameInstance getGameInstanceByPlayer(Player player) {
-        if (player.hasMetadata(MetadataValues.GAME_INSTANCE.key)) {
-            return (GameInstance) player
-                    .getMetadata(MetadataValues.GAME_INSTANCE.key).get(0).value();
-        }
-        return null;
     }
 }

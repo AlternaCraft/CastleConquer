@@ -18,9 +18,12 @@ package com.alternacraft.castleconquer.Teams;
 
 import com.alternacraft.aclib.PluginBase;
 import com.alternacraft.castleconquer.Data.MetadataValues;
+import com.alternacraft.castleconquer.Game.GameInstance;
+import com.alternacraft.castleconquer.Teams.Team.TeamType;
+import java.util.UUID;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.metadata.MetadataValue;
 
 /**
  * This class is the main object of the team members.
@@ -65,20 +68,44 @@ public class TeamMember {
     }
 
     /**
-     * Returns a TeamMember object from a player.
+     * Serializes a TeamMember object.
      *
-     * @param player
      * @return
      */
-    public final static TeamMember getTeamMemberFromPlayer(Player player) {
-        if (player.hasMetadata(MetadataValues.TEAM_MEMBER.key)) {
-            for (MetadataValue mv : player
-                    .getMetadata(MetadataValues.TEAM_MEMBER.key)) {
-                System.out.println(mv.value());
-            }
-            return (TeamMember) player
-                    .getMetadata(MetadataValues.TEAM_MEMBER.key).get(0).value();
+    @Override
+    public final String toString() {
+        String serialized = new StringBuilder()
+                .append("[")
+                .append(player.getUniqueId().toString())
+                .append(",")
+                .append(team.getTeamType().toString())
+                .append("]")
+                .toString();
+        return serialized;
+    }
+
+    /**
+     * Deserializes a TeamMember object.
+     *
+     * @param serialized
+     * @param gi
+     * @return
+     */
+    public final static TeamMember fromString(String serialized, GameInstance gi) {
+        String serializedCleaned = serialized.replace("[", "").replace("]", "");
+        String[] serializedSplitted = serializedCleaned.split(",");
+        String serializedTeamType = serializedSplitted[1];
+
+        Player pl = Bukkit.getPlayer(UUID.fromString(serializedSplitted[0]));
+        Team t;
+        if (serializedTeamType.equalsIgnoreCase(TeamType.ATTACKERS.toString())) {
+            t = gi.getTeamsManager().getAttackers();
+        } else {
+            t = gi.getTeamsManager().getDefenders();
         }
-        return null;
+
+        TeamMember tm = new TeamMember(pl);
+        tm.defineTeam(t);
+        return tm;
     }
 }

@@ -17,21 +17,28 @@
 package com.alternacraft.castleconquer.Commands;
 
 import com.alternacraft.aclib.MessageManager;
+import com.alternacraft.aclib.PluginBase;
 import com.alternacraft.aclib.commands.ArgumentExecutor;
 import com.alternacraft.aclib.langs.Langs;
 import com.alternacraft.aclib.utils.Localizer;
+import com.alternacraft.castleconquer.Data.MetadataValues;
+import com.alternacraft.castleconquer.Files.GamesRegisterer;
 import com.alternacraft.castleconquer.Game.GameInstance;
-import com.alternacraft.castleconquer.Game.GamesRegister;
 import com.alternacraft.castleconquer.Langs.GameLanguageFile;
 import com.alternacraft.castleconquer.Langs.MainLanguageFile;
+import com.alternacraft.castleconquer.Main.CastleConquer;
 import com.alternacraft.castleconquer.Main.Manager;
 import com.alternacraft.castleconquer.Teams.TeamMember;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class LeaveGameCommand implements ArgumentExecutor {
+    private final CastleConquer plugin = (CastleConquer) PluginBase.INSTANCE.plugin();
+
     @Override
     public boolean execute(CommandSender cs, String[] args) {
+        GamesRegisterer greger = Manager.getGamesRegisterer();
+
         if (!(cs instanceof Player)) {
             MessageManager.sendCommandSender(
                     cs,
@@ -39,39 +46,54 @@ public class LeaveGameCommand implements ArgumentExecutor {
                     .getText(Langs.EN)
             );
         } else {
-            GamesRegister greg = Manager.getGamesRegister();
             Player player = (Player) cs;
-            GameInstance gi = GameInstance.getGameInstanceByPlayer(player);
 
-            if (gi == null) {
+            if (!player.hasMetadata(MetadataValues.GAME_INSTANCE.key)) {
                 MessageManager.sendCommandSender(
                         cs,
                         GameLanguageFile.GAME_NOT_IN_QUEUE
                         .getText(Localizer.getLocale(player))
                 );
             } else {
-                TeamMember tm = TeamMember.getTeamMemberFromPlayer(player);
+                GameInstance gi = (GameInstance) player
+                        .getMetadata(MetadataValues.GAME_INSTANCE.key).get(0)
+                        .value();
+                TeamMember tm = (TeamMember) player
+                        .getMetadata(MetadataValues.TEAM_MEMBER.key).get(0)
+                        .value();
+
                 tm.getTeam().removeMember(tm);
 
-                if (gi.isCountdownStarted()) {
-                    gi.stopCountdown();
-                    for (Player pl : gi.getPlayersInQueue()) {
-                        MessageManager.sendPlayer(
-                                pl,
-                                GameLanguageFile.GAME_COUNTDOWN_PLAYER_LEFT_QUEUE
-                                .getText(Localizer.getLocale(pl))
-                        );
+                if (gi.isPlayerInQueue(player)) {
+                    if (gi.isCountdownStarted()) {
+                        gi.stopCountdown();
+                        for (Player pl : gi.getPlayersInQueue()) {
+                            MessageManager.sendPlayer(
+                                    pl,
+                                    GameLanguageFile.GAME_COUNTDOWN_PLAYER_LEFT_QUEUE
+                                    .getText(Localizer.getLocale(pl))
+                            );
+                        }
                     }
+
+                    gi.removePlayerFromQueue(player);
+                } else {
+                    gi.removePlayerFromGame(player);
                 }
 
-                gi.removePlayerFromQueue(player);
                 MessageManager.sendCommandSender(
                         cs,
                         GameLanguageFile.GAME_LEFT_QUEUE
                         .getText(Localizer.getLocale(player))
                 );
+
+                greger.saveGameInstance(gi);
+
+                player.removeMetadata(MetadataValues.GAME_INSTANCE.key, plugin);
+                player.removeMetadata(MetadataValues.TEAM_MEMBER.key, plugin);
             }
         }
+
         return true;
     }
 }

@@ -3,7 +3,7 @@ name: CastleConquer
 version: 0.0.1-ALPHA
 description: Defend or conquer the castle, and die if needed!
 database: false
-website: www.alternacraft.esy.es
+website: alternacraft.github.io/CastleConquer/
 
 author: AlternaCraft
 

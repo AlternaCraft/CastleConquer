@@ -17,143 +17,89 @@
 package com.alternacraft.castleconquer.Commands;
 
 import com.alternacraft.aclib.MessageManager;
+import com.alternacraft.aclib.PluginBase;
 import com.alternacraft.aclib.commands.ArgumentExecutor;
 import com.alternacraft.aclib.langs.Langs;
 import com.alternacraft.aclib.utils.Localizer;
-import com.alternacraft.aclib.utils.StringsUtils;
+import com.alternacraft.castleconquer.Data.MetadataValues;
 import com.alternacraft.castleconquer.Files.GamesRegisterer;
 import com.alternacraft.castleconquer.Langs.ManageLanguageFile;
 import com.alternacraft.castleconquer.Game.GameInstance;
-import com.alternacraft.castleconquer.Game.GamesRegister;
 import com.alternacraft.castleconquer.Langs.MainLanguageFile;
+import com.alternacraft.castleconquer.Main.CastleConquer;
 import com.alternacraft.castleconquer.Main.Manager;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.block.Sign;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class InitializeGameCommand implements ArgumentExecutor {
+    private final CastleConquer plugin = (CastleConquer) PluginBase.INSTANCE.plugin();
+
     @Override
     public boolean execute(CommandSender cs, String[] args) {
-        GamesRegister greg = Manager.getGamesRegister();
         GamesRegisterer greger = Manager.getGamesRegisterer();
+        
+        Langs lang = (cs instanceof Player) ? Localizer.getLocale((Player) cs)
+                : PluginBase.INSTANCE.getMainLanguage();
 
-        String usage = Manager.getArgumentsRegisterer()
-                .getArgument(this).getUsage();
+        World world;
 
-        if (cs instanceof Player) {
-            Player player = (Player) cs;
-            World world = player.getWorld();
-
-            if (args.length >= 2) {
-                world = Bukkit.getWorld(args[2]);
-            }
-
-            if (world != null) {
-                if (greg.isRegistered(world)) {
-                    GameInstance gi = greg.seekGameByWorld(world);
-
-                    if (!gi.isInitialized()) {
-                        if (gi.canInitialize()) {
-                            initializeGame(gi, cs);
-                        } else {
-                            MessageManager.sendCommandSender(cs,
-                                    ManageLanguageFile.GAME_WORLD_CANNOT_INITIALIZE
-                                    .getText(Localizer.getLocale(player))
-                            );
-                        }
-                    } else {
-                        MessageManager.sendCommandSender(cs,
-                                ManageLanguageFile.GAME_WORLD_ALREADY_INITIALIZED
-                                .getText(Localizer.getLocale(player))
-                        );
-                    }
-                } else {
-                    MessageManager.sendCommandSender(cs,
-                            ManageLanguageFile.GAME_WORLD_NOT_REGISTERED
-                            .getText(Localizer.getLocale(player))
-                    );
-                }
-            } else {
-                MessageManager.sendCommandSender(cs,
-                        MainLanguageFile.WORLD_NOT_EXIST
-                        .getText(Localizer.getLocale(player))
-                );
-            }
-        } else if (args.length >= 2) {
-            World world = Bukkit.getWorld(args[1]);
-
-            if (world != null) {
-                if (greg.isRegistered(world)) {
-                    String team = args[1];
-
-                    GameInstance gi = greg.seekGameByWorld(world);
-
-                    if (gi.isInitialized()) {
-                        if (gi.canInitialize()) {
-                            initializeGame(gi, cs);
-                        } else {
-                            MessageManager.sendCommandSender(cs,
-                                    ManageLanguageFile.GAME_WORLD_CANNOT_INITIALIZE
-                                    .getText(Langs.EN)
-                            );
-                        }
-                    } else {
-                        MessageManager.sendCommandSender(cs,
-                                ManageLanguageFile.GAME_WORLD_ALREADY_INITIALIZED
-                                .getText(Langs.EN)
-                        );
-                    }
-                } else {
-                    MessageManager.sendCommandSender(cs,
-                            ManageLanguageFile.GAME_WORLD_NOT_REGISTERED
-                            .getText(Langs.EN)
-                    );
-                }
-            } else {
-                MessageManager.sendCommandSender(cs,
-                        MainLanguageFile.WORLD_NOT_EXIST
-                        .getText(Langs.EN)
-                );
-            }
-        } else {
+        if (!(cs instanceof Player) && args.length == 1) {
             MessageManager.sendCommandSender(cs,
                     MainLanguageFile.MUST_BE_PLAYER
-                    .getText(Langs.EN)
+                    .getText(lang)
             );
             MessageManager.sendCommandSender(cs,
                     ManageLanguageFile.GAME_WORLD_INITIALIZE_CONSOLE
-                    .getText(Langs.EN)
-            );
-        }
-        return true;
-    }
-
-    private void initializeGame(GameInstance gi, CommandSender cs) {
-        GamesRegisterer greger = Manager.getGamesRegisterer();
-        gi.initialize();
-
-        greger.saveGameInstance(gi);
-
-        if (gi.getSign() != null) {
-            Sign sign = (Sign) gi.getSign().getState();
-            sign.setLine(3, StringsUtils
-                    .translateColors("&d0&5/"
-                            + (gi.getMaxPlayersPerTeam() * 2)));
-            sign.update();
-        }
-
-        if (cs instanceof Player) {
-            MessageManager.sendCommandSender(cs,
-                    ManageLanguageFile.GAME_WORLD_INITIALIZED
-                    .getText(Localizer.getLocale((Player) cs))
+                    .getText(lang)
             );
         } else {
-            MessageManager.sendCommandSender(cs,
-                    ManageLanguageFile.GAME_WORLD_INITIALIZED
-                    .getText(Langs.EN)
-            );
+            if (args.length >= 2) {
+                world = Bukkit.getWorld(args[1]);
+            } else {
+                Player player = (Player) cs;
+                world = player.getWorld();
+            }
+
+            if (world == null) {
+                MessageManager.sendCommandSender(cs,
+                        MainLanguageFile.WORLD_NOT_EXIST
+                        .getText(lang)
+                );
+            } else if (!world.hasMetadata(MetadataValues.GAME_INSTANCE.key)) {
+                MessageManager.sendCommandSender(cs,
+                        ManageLanguageFile.GAME_WORLD_NOT_REGISTERED
+                        .getText(lang)
+                );
+            } else {
+                GameInstance gi = (GameInstance) world
+                        .getMetadata(MetadataValues.GAME_INSTANCE.key).get(0)
+                        .value();
+
+                if (gi.isInitialized()) {
+                    MessageManager.sendCommandSender(cs,
+                            ManageLanguageFile.GAME_WORLD_ALREADY_INITIALIZED
+                            .getText(lang)
+                    );
+                } else if (!gi.canInitialize()) {
+                    MessageManager.sendCommandSender(cs,
+                            ManageLanguageFile.GAME_WORLD_CANNOT_INITIALIZE
+                            .getText(lang)
+                    );
+                } else {
+                    gi.initialize();
+                    gi.updateSignData();
+                    greger.saveGameInstance(gi);
+
+                    MessageManager.sendCommandSender(cs,
+                            ManageLanguageFile.GAME_WORLD_INITIALIZED
+                            .getText(lang)
+                    );
+                }
+            }
         }
+
+        return true;
     }
 }

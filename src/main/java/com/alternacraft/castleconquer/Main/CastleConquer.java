@@ -20,6 +20,7 @@ import com.alternacraft.aclib.MessageManager;
 import com.alternacraft.aclib.PluginBase;
 import com.alternacraft.castleconquer.Handlers.GameJoiningHandler;
 import com.alternacraft.castleconquer.Handlers.GameSignHandler;
+import com.alternacraft.castleconquer.Handlers.PlayerConnectionHandler;
 import com.alternacraft.castleconquer.Handlers.TeamConquerHandler;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -45,6 +46,11 @@ public final class CastleConquer extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new GameSignHandler(this), this);
         getServer().getPluginManager().registerEvents(new GameJoiningHandler(this), this);
         getServer().getPluginManager().registerEvents(new TeamConquerHandler(), this);
+        getServer().getPluginManager().registerEvents(new PlayerConnectionHandler(), this);
+
+        // Sends the disabled message
+        MessageManager.log("The plugin has been enabled!");
+        MessageManager.log("Plugin version: " + getDescription().getVersion());
     }
 
     @Override

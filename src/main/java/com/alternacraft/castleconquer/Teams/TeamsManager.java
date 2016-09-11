@@ -22,8 +22,8 @@ package com.alternacraft.castleconquer.Teams;
  * @author AlternaCraft
  */
 public final class TeamsManager {
-    private final Team defenders = new Team(Team.TeamType.DEFENDERS);
-    private final Team attackers = new Team(Team.TeamType.ATTACKERS);
+    private final Team defenders = new Team(this, Team.TeamType.DEFENDERS);
+    private final Team attackers = new Team(this, Team.TeamType.ATTACKERS);
 
     /**
      * Returns the defenders team.

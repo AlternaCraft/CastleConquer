@@ -48,11 +48,11 @@ public final class Manager {
 
         // Saves the ManageLanguageFile into the language files
         LangManager.setKeys(Langs.EN);
-        LangManager.saveMessages(LangManager.DIRECTORY + "GlobalMessages",
+        LangManager.saveMessages(LangManager.LANG_DIRECTORY + "GlobalMessages",
                 DefaultMessages.class, MainLanguageFile.class);
-        LangManager.saveMessages(LangManager.DIRECTORY + "ManagingMessages",
+        LangManager.saveMessages(LangManager.LANG_DIRECTORY + "ManagingMessages",
                 ManageLanguageFile.class);
-        LangManager.saveMessages(LangManager.DIRECTORY + "GamesMessages",
+        LangManager.saveMessages(LangManager.LANG_DIRECTORY + "GamesMessages",
                 GameLanguageFile.class);
         LangManager.loadMessages();
 

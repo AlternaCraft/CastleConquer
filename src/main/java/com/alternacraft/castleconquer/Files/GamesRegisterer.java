@@ -18,11 +18,14 @@ package com.alternacraft.castleconquer.Files;
 
 import com.alternacraft.castleconquer.Langs.ManageLanguageFile;
 import com.alternacraft.aclib.MessageManager;
+import com.alternacraft.aclib.PluginBase;
 import com.alternacraft.aclib.langs.LangInterface;
+import com.alternacraft.castleconquer.Data.MetadataValues;
 import com.alternacraft.castleconquer.Game.GameInstance;
 import com.alternacraft.castleconquer.Langs.MainLanguageFile;
 import com.alternacraft.castleconquer.Main.CastleConquer;
 import com.alternacraft.castleconquer.Main.Manager;
+import com.alternacraft.castleconquer.Teams.TeamMember;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,6 +38,8 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.metadata.FixedMetadataValue;
 
 public final class GamesRegisterer {
     public class GameRegisterResult extends GameUnregisterResult {
@@ -59,6 +64,7 @@ public final class GamesRegisterer {
     }
 
     private final String folderPath;
+    private final CastleConquer plugin = (CastleConquer) PluginBase.INSTANCE.plugin();
 
     public GamesRegisterer(CastleConquer plugin) {
         this.folderPath = plugin.getDataFolder() + "/games/";
@@ -99,8 +105,8 @@ public final class GamesRegisterer {
                 GameInstance gi = new GameInstance(world, maxPlayersPerTeam);
                 Manager.getGamesRegister().registerGame(gi);
 
-                result = new GameRegisterResult(null,
-                        ManageLanguageFile.GAME_WORLD_REGISTERED, true
+                result = new GameRegisterResult(gi,
+                        ManageLanguageFile.GAME_WORLD_REGISTERED, false
                 );
             }
         } catch (IOException ex) {
@@ -132,7 +138,9 @@ public final class GamesRegisterer {
         } else {
             file.delete();
 
-            GameInstance gi = Manager.getGamesRegister().seekGameByWorld(world);
+            GameInstance gi = (GameInstance) world
+                    .getMetadata(MetadataValues.GAME_INSTANCE.key).get(0)
+                    .value();
 
             if (gi.getDefendersFlag() != null) {
                 gi.getDefendersFlag().setType(Material.AIR);
@@ -147,7 +155,7 @@ public final class GamesRegisterer {
             Manager.getGamesRegister().unregisterGame(gi);
 
             result = new GameUnregisterResult(
-                    ManageLanguageFile.GAME_WORLD_UNREGISTERED, true
+                    ManageLanguageFile.GAME_WORLD_UNREGISTERED, false
             );
         }
 
@@ -232,6 +240,12 @@ public final class GamesRegisterer {
         }
         // </editor-fold>
 
+        // <editor-fold defaultstate="collapsed" desc="Started">
+        if (fileYAML.getBoolean("match-started")) {
+            gi.setMatchStarted(true);
+        }
+        // </editor-fold>
+
         // <editor-fold defaultstate="collapsed" desc="Max players">
         gi.setMaxPlayersPerTeam(fileYAML.getInt("max-players-per-team"));
         // </editor-fold>
@@ -247,6 +261,34 @@ public final class GamesRegisterer {
 
             Block gameInstanceSign = world.getBlockAt(gameInstanceSignPos);
             gi.defineSign(gameInstanceSign);
+        }
+        // </editor-fold>
+
+        // <editor-fold defaultstate="collapsed" desc="In-queue players">
+        if (fileYAML.contains("in-queue")) {
+            List<String> inQueueSerialized = fileYAML.getStringList("in-queue");
+
+            for (String serialized : inQueueSerialized) {
+                TeamMember tm = TeamMember.fromString(serialized, gi);
+                gi.addPlayerToQueue(tm.getPlayer());
+
+                tm.getPlayer().setMetadata(MetadataValues.GAME_INSTANCE.key,
+                        new FixedMetadataValue(plugin, gi));
+            }
+        }
+        // </editor-fold>
+
+        // <editor-fold defaultstate="collapsed" desc="In-game players">
+        if (fileYAML.contains("in-game")) {
+            List<String> inGameSerialized = fileYAML.getStringList("in-game");
+
+            for (String serialized : inGameSerialized) {
+                TeamMember tm = TeamMember.fromString(serialized, gi);
+                gi.addPlayerToQueue(tm.getPlayer());
+
+                tm.getPlayer().setMetadata(MetadataValues.GAME_INSTANCE.key,
+                        new FixedMetadataValue(plugin, gi));
+            }
         }
         // </editor-fold>
 
@@ -303,9 +345,9 @@ public final class GamesRegisterer {
             fileYAML.set("initialized", gi.isInitialized());
             // </editor-fold>        
 
-            // <editor-fold defaultstate="collapsed" desc="Initialized">
-            fileYAML.set("max-players-per-team", gi.getMaxPlayersPerTeam());
-            // </editor-fold>        
+            // <editor-fold defaultstate="collapsed" desc="Started">
+            fileYAML.set("match-started", gi.isMatchStarted());
+            // </editor-fold>
 
             // <editor-fold defaultstate="collapsed" desc="Game instance sign">
             if (gi.getSign() != null) {
@@ -319,6 +361,38 @@ public final class GamesRegisterer {
                 fileYAML.set("game-sign", gameSignPos_serialized);
             } else {
                 fileYAML.set("game-sign", null);
+            }
+            // </editor-fold>
+
+            // <editor-fold defaultstate="collapsed" desc="In-queue players">
+            List<String> inQueueSerialized = new ArrayList<>();
+
+            if (!gi.getPlayersInQueue().isEmpty()) {
+                for (Player player : gi.getPlayersInQueue()) {
+                    TeamMember tm = (TeamMember) player
+                            .getMetadata(MetadataValues.TEAM_MEMBER.key).get(0)
+                            .value();
+                    inQueueSerialized.add(tm.toString());
+                }
+                fileYAML.set("in-queue", inQueueSerialized);
+            } else {
+                fileYAML.set("in-queue", null);
+            }
+            // </editor-fold>
+
+            // <editor-fold defaultstate="collapsed" desc="In-game players">
+            List<String> inGameSerialized = new ArrayList<>();
+
+            if (!gi.getPlayersInGame().isEmpty()) {
+                for (Player player : gi.getPlayersInGame()) {
+                    TeamMember tm = (TeamMember) player
+                            .getMetadata(MetadataValues.TEAM_MEMBER.key).get(0)
+                            .value();
+                    inGameSerialized.add(tm.toString());
+                }
+                fileYAML.set("in-game", inGameSerialized);
+            } else {
+                fileYAML.set("in-game", null);
             }
             // </editor-fold>
 

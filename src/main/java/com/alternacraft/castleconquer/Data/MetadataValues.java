@@ -32,7 +32,6 @@ import org.bukkit.metadata.FixedMetadataValue;
  */
 public enum MetadataValues {
     // <editor-fold defaultstate="collapsed" desc="Values">
-    PLAYING("castleconquer:playing"),
     IN_QUEUE("castleconquer:in-queue"),
     TEAM_MEMBER("castleconquer:team-member"),
     GAME_INSTANCE("castleconquer:game-instance");
@@ -51,13 +50,6 @@ public enum MetadataValues {
      */
     public static void register() {
         CastleConquer plugin = (CastleConquer) PluginBase.INSTANCE.plugin();
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.setMetadata(PLAYING.key,
-                    new FixedMetadataValue(plugin, false));
-            player.setMetadata(IN_QUEUE.key,
-                    new FixedMetadataValue(plugin, false));
-        }
 
         for (World world : Bukkit.getWorlds()) {
             GameInstance gi = Manager.getGamesRegister().seekGameByWorld(world);

@@ -20,6 +20,7 @@ import com.alternacraft.aclib.MessageManager;
 import com.alternacraft.aclib.utils.Localizer;
 import com.alternacraft.aclib.utils.StringsUtils;
 import com.alternacraft.castleconquer.Data.MetadataValues;
+import com.alternacraft.castleconquer.Files.GamesRegisterer;
 import com.alternacraft.castleconquer.Game.GameInstance;
 import com.alternacraft.castleconquer.Game.GamesRegister;
 import com.alternacraft.castleconquer.Langs.GameLanguageFile;
@@ -45,6 +46,7 @@ import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import com.alternacraft.castleconquer.Langs.MainLanguageFile;
 import com.alternacraft.castleconquer.Teams.TeamsManager;
+import org.bukkit.metadata.FixedMetadataValue;
 
 /**
  * This class handles all the events in relation with joining a game, like
@@ -64,60 +66,57 @@ public final class GameJoiningHandler implements Listener {
     public void OnPlayerClicksGameSign(PlayerInteractEvent event) {
         Block block = event.getClickedBlock();
 
-        if (block != null) {
-            if (block.getType().equals(Material.WALL_SIGN)
-                    || block.getType().equals(Material.SIGN_POST)) {
-                Player player = event.getPlayer();
-                GamesRegister greg = Manager.getGamesRegister();
-                Sign sign = (Sign) event.getClickedBlock().getState();
+        if (block != null && (block.getType().equals(Material.WALL_SIGN)
+                || block.getType().equals(Material.SIGN_POST))) {
+            Player player = event.getPlayer();
+            GamesRegister greg = Manager.getGamesRegister();
+            Sign sign = (Sign) event.getClickedBlock().getState();
 
-                if (StringsUtils.stripColors(sign.getLine(0))
-                        .equalsIgnoreCase("[CastleConquer]")) {
-                    world = Bukkit.getWorld(StringsUtils
-                            .stripColors(sign.getLine(2)));
+            if (StringsUtils.stripColors(sign.getLine(0))
+                    .equalsIgnoreCase("[CastleConquer]")) {
+                world = Bukkit.getWorld(StringsUtils
+                        .stripColors(sign.getLine(2)));
 
-                    if (world == null) {
-                        MessageManager.sendCommandSender(
-                                player,
-                                MainLanguageFile.WORLD_NOT_EXIST
-                                .getText(Localizer.getLocale(player))
-                        );
-                        return;
+                if (world == null) {
+                    MessageManager.sendCommandSender(
+                            player,
+                            MainLanguageFile.WORLD_NOT_EXIST
+                            .getText(Localizer.getLocale(player))
+                    );
+                    return;
+                }
+
+                if (greg.isRegistered(world)) {
+                    GameInstance gi = (GameInstance) world.getMetadata(
+                            MetadataValues.GAME_INSTANCE.key
+                    ).get(0).value();
+
+                    if (world.getMetadata(
+                            MetadataValues.GAME_INSTANCE.key
+                    ).isEmpty()) {
+                        System.out.println("empty");
                     }
 
-                    if (greg.isRegistered(world)) {
-                        GameInstance gi = (GameInstance) world.getMetadata(
-                                MetadataValues.GAME_INSTANCE.key
-                        ).get(0).value();
-
-                        if (world.getMetadata(
-                                MetadataValues.GAME_INSTANCE.key
-                        ).isEmpty()) {
-                            System.out.println("empty");
-                        }
-
-                        if (gi.getSign() != null) {
-                            if (gi.getSign().getLocation().equals(block.getLocation())) {
-                                if (gi.isInitialized()) {
-                                    if (sign.getLine(1).equalsIgnoreCase(StringsUtils
-                                            .translateColors("&6Join to match"))) {
-                                        if (!gi.isPlayerInQueue(player)) {
-                                            startSelecting(gi, player);
-                                        } else {
-                                            MessageManager.sendCommandSender(
-                                                    player,
-                                                    GameLanguageFile.GAME_ALREADY_IN_QUEUE
-                                                    .getText(Localizer.getLocale(player))
-                                            );
-                                        }
-                                    }
+                    if (gi.getSign() != null && gi.getSign().getLocation()
+                            .equals(block.getLocation())) {
+                        if (gi.isInitialized()) {
+                            if (sign.getLine(1).equalsIgnoreCase(StringsUtils
+                                    .translateColors("&6Join to match"))) {
+                                if (!gi.isPlayerInQueue(player)) {
+                                    startSelecting(gi, player);
                                 } else {
-                                    MessageManager.sendPlayer(player,
-                                            GameLanguageFile.GAME_JOINING_NOT_INITIALIZED
+                                    MessageManager.sendCommandSender(
+                                            player,
+                                            GameLanguageFile.GAME_ALREADY_IN_QUEUE
                                             .getText(Localizer.getLocale(player))
                                     );
                                 }
                             }
+                        } else {
+                            MessageManager.sendPlayer(player,
+                                    GameLanguageFile.GAME_JOINING_NOT_INITIALIZED
+                                    .getText(Localizer.getLocale(player))
+                            );
                         }
                     }
                 }
@@ -187,30 +186,34 @@ public final class GameJoiningHandler implements Listener {
 
             if (greg.isRegistered(world)) {
                 ItemStack clickedItem = event.getCurrentItem();
-                ItemMeta clickedItemMeta = clickedItem.getItemMeta();
-                GameInstance gi = (GameInstance) world.getMetadata(
-                        MetadataValues.GAME_INSTANCE.key
-                ).get(0).value();
-                Player player = (Player) event.getWhoClicked();
+                if (clickedItem != null) {
+                    ItemMeta clickedItemMeta = clickedItem.getItemMeta();
+                    GameInstance gi = (GameInstance) world.getMetadata(
+                            MetadataValues.GAME_INSTANCE.key
+                    ).get(0).value();
+                    Player player = (Player) event.getWhoClicked();
 
-                if (clickedItemMeta != null) {
-                    if (clickedItemMeta.getDisplayName() != null) {
-                        if (clickedItemMeta.getDisplayName().equalsIgnoreCase(StringsUtils.translateColors("&4Join attackers"))) {
-                            joinToTeam(player, gi, TeamType.ATTACKERS);
-                        } else if (clickedItem.getItemMeta().getDisplayName()
-                                .equalsIgnoreCase(StringsUtils
-                                        .translateColors("&2Join defenders"))) {
-                            joinToTeam(player, gi, TeamType.DEFENDERS);
+                    if (clickedItemMeta != null) {
+                        if (clickedItemMeta.getDisplayName() != null) {
+                            if (clickedItemMeta.getDisplayName().equalsIgnoreCase(StringsUtils.translateColors("&4Join attackers"))) {
+                                joinToTeam(player, gi, TeamType.ATTACKERS);
+                            } else if (clickedItem.getItemMeta().getDisplayName()
+                                    .equalsIgnoreCase(StringsUtils
+                                            .translateColors("&2Join defenders"))) {
+                                joinToTeam(player, gi, TeamType.DEFENDERS);
+                            }
                         }
                     }
-                }
 
-                event.setCancelled(true);
+                    event.setCancelled(true);
+                }
             }
         }
     }
 
     private void joinToTeam(Player player, GameInstance gi, TeamType tt) {
+        GamesRegisterer greger = Manager.getGamesRegisterer();
+
         TeamMember tm = new TeamMember(player);
         TeamsManager tman = gi.getTeamsManager();
 
@@ -230,6 +233,13 @@ public final class GameJoiningHandler implements Listener {
             );
         }
         gi.addPlayerToQueue(player);
+        greger.saveGameInstance(gi);
+
+        player.setMetadata(MetadataValues.GAME_INSTANCE.key,
+                new FixedMetadataValue(plugin, gi));
+        player.setMetadata(MetadataValues.TEAM_MEMBER.key,
+                new FixedMetadataValue(plugin, tm));
+
         player.closeInventory();
     }
 }

@@ -16,9 +16,11 @@
  */
 package com.alternacraft.castleconquer.Commands;
 
+import com.alternacraft.aclib.arguments.ArgumentsInterface;
+import com.alternacraft.aclib.arguments.ArgumentsRegister;
 import com.alternacraft.aclib.commands.ArgumentExecutor;
 import com.alternacraft.aclib.commands.CommandArgument;
-import com.alternacraft.aclib.commands.CommandListener;
+import com.alternacraft.castleconquer.Langs.ArgumentsLanguageFile;
 import com.alternacraft.castleconquer.Main.CastleConquer;
 
 /**
@@ -28,59 +30,68 @@ import com.alternacraft.castleconquer.Main.CastleConquer;
  * @author AlternaCraft
  */
 public final class ArgumentsRegisterer {
-    public enum Arguments {
+    public enum Arguments implements ArgumentsInterface {
         // <editor-fold defaultstate="collapsed" desc="Arguments">
+        EMPTY_COMMAND(
+                "", "", null, new CommandEmpty()
+        ),
+        INFO_COMMAND(
+                "info",
+                "/cc info",
+                ArgumentsLanguageFile.INFO_COMMAND,
+                new InfoCommand()
+        ),
         REGISTER_WORLD_GAME(
                 "reg",
                 "/cc reg <max_players_per_team> (<world_name>)",
-                "Registers a world as a game world",
+                ArgumentsLanguageFile.REGISTER_WORLD_GAME,
                 new RegisterGameCommand()
         ),
         UNREGISTER_WORLD_GAME(
                 "unreg",
                 "/cc unreg (<world_name>)",
-                "Unregisters a world from being a game world",
+                ArgumentsLanguageFile.UNREGISTER_WORLD_GAME,
                 new UnregisterGameCommand()
         ),
         INITIALIZE_WORLD_GAME(
                 "init",
                 "/cc init (<world_name>)",
-                "Makes a world playable",
+                ArgumentsLanguageFile.INITIALIZE_WORLD_GAME,
                 new InitializeGameCommand()
         ),
         UNINITIALIZE_WORLD_GAME(
                 "uninit",
                 "/cc uninit (<world_name>)",
-                "Makes a world unplayable",
+                ArgumentsLanguageFile.UNINITIALIZE_WORLD_GAME,
                 new UninitializeGameCommand()
         ),
         SET_FLAG(
                 "setflag",
                 "/cc setflag [def|att]",
-                "Sets the flag of the defensors or attackers",
+                ArgumentsLanguageFile.SET_FLAG,
                 new SetFlagCommand()
         ),
         DELETE_FLAG(
                 "delflag",
                 "/cc delflag [def|att] (<world_name>)",
-                "Deletes the flag of the defensors or attackers",
+                ArgumentsLanguageFile.DELETE_FLAG,
                 new DeleteFlagCommand()
         ),
         LEAVE_GAME(
                 "leave",
                 "/cc leave",
-                "Leaves from the current game",
+                ArgumentsLanguageFile.LEAVE_GAME,
                 new LeaveGameCommand()
         );
         // </editor-fold>
 
         // <editor-fold defaultstate="collapsed" desc="Internal stuff">
-        public String arg = null;
-        public String usage = null;
-        public String desc = null;
-        public ArgumentExecutor cmdArg = null;
+        private String arg = null;
+        private String usage = null;
+        private Enum desc = null;
+        private ArgumentExecutor cmdArg = null;
 
-        Arguments(String arg, String usage, String desc,
+        Arguments(String arg, String usage, Enum desc,
                 ArgumentExecutor cmdArg) {
             this.arg = arg;
             this.usage = usage;
@@ -88,20 +99,33 @@ public final class ArgumentsRegisterer {
             this.cmdArg = cmdArg;
         }
         // </editor-fold>
+
+        @Override
+        public String getArgument() {
+            return arg;
+        }
+
+        @Override
+        public String getUsage() {
+            return usage;
+        }
+
+        @Override
+        public Enum getDescription() {
+            return desc;
+        }
+
+        @Override
+        public ArgumentExecutor getClazz() {
+            return cmdArg;
+        }
     }
 
-    private final CommandListener cl;
+    private final ArgumentsRegister ar;
 
     public ArgumentsRegisterer(CastleConquer plugin) {
-        cl = new CommandListener("castleconquer", "cc", plugin);
-        cl.addArgument(new CommandArgument("", "", ""),
-                new CommandEmpty(plugin));
-
-        for (Arguments cmd : Arguments.values()) {
-            CommandArgument cmdArg = new CommandArgument(cmd.arg, cmd.usage,
-                    cmd.desc);
-            cl.addArgument(cmdArg, cmd.cmdArg);
-        }
+        ar = new ArgumentsRegister("castleconquer", "cc");
+        ar.register(Arguments.class);
     }
 
     /**
@@ -111,6 +135,6 @@ public final class ArgumentsRegisterer {
      * @return
      */
     public CommandArgument getArgument(ArgumentExecutor arg) {
-        return cl.getCmdArgument(arg);
+        return ar.cmdListener().getCmdArgument(arg);
     }
 }

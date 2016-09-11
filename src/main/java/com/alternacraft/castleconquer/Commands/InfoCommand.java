@@ -22,25 +22,23 @@ import com.alternacraft.aclib.commands.ArgumentExecutor;
 import com.alternacraft.castleconquer.Main.CastleConquer;
 import org.bukkit.command.CommandSender;
 
-public class CommandEmpty implements ArgumentExecutor {
+public class InfoCommand implements ArgumentExecutor {
     private final CastleConquer plugin = (CastleConquer) PluginBase.INSTANCE.plugin();
 
     @Override
     public boolean execute(CommandSender cs, String[] args) {
-        for (String line : PluginBase.INSTANCE.getPluginDescription().getLines()) {
-            MessageManager.sendCommandSender(
-                    cs,
-                    "&fPlugin developed by &9AlternaCraft"
-            );
-            MessageManager.sendCommandSender(
-                    cs,
-                    "&6Version: &e" + plugin.getDescription().getVersion()
-            );
-            MessageManager.sendCommandSender(
-                    cs,
-                    "&fMore info in &9" + plugin.getDescription().getWebsite()
-            );
-        }
+        MessageManager.sendCommandSender(
+                cs,
+                "&fPlugin developed by &9AlternaCraft"
+        );
+        MessageManager.sendCommandSender(
+                cs,
+                "&6Version: &e" + plugin.getDescription().getVersion()
+        );
+        MessageManager.sendCommandSender(
+                cs,
+                "&fMore info in &9" + plugin.getDescription().getWebsite()
+        );
         return true;
     }
 }

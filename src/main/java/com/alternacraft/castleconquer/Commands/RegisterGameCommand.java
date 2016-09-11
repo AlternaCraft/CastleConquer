@@ -24,169 +24,105 @@ import com.alternacraft.aclib.utils.Localizer;
 import com.alternacraft.aclib.utils.NumbersUtils;
 import com.alternacraft.castleconquer.Data.MetadataValues;
 import com.alternacraft.castleconquer.Files.GamesRegisterer;
+import com.alternacraft.castleconquer.Game.GameInstance;
+import com.alternacraft.castleconquer.Game.GamesRegister;
 import com.alternacraft.castleconquer.Langs.MainLanguageFile;
 import com.alternacraft.castleconquer.Langs.ManageLanguageFile;
+import com.alternacraft.castleconquer.Main.CastleConquer;
 import com.alternacraft.castleconquer.Main.Manager;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.plugin.Plugin;
 
 public final class RegisterGameCommand implements ArgumentExecutor {
+    private final CastleConquer plugin = (CastleConquer) PluginBase.INSTANCE.plugin();
+
     @Override
     public boolean execute(CommandSender cs, String[] args) {
         GamesRegisterer greger = Manager.getGamesRegisterer();
+        GamesRegister greg = Manager.getGamesRegister();
 
         String usage = Manager.getArgumentsRegisterer()
                 .getArgument(this).getUsage();
+        Langs lang = (cs instanceof Player) ? Localizer.getLocale((Player) cs)
+                : PluginBase.INSTANCE.getMainLanguage();
 
-        if (cs instanceof Player) {
-            Player player = (Player) cs;
-            World world = player.getWorld();
+        int maxPlayersPerTeam;
+        World world;
 
-            if (args.length >= 2) {
-                if (NumbersUtils.isInteger(args[1])) {
-                    int maxPlayersPerTeam = Integer.valueOf(args[1]);
-
-                    if (maxPlayersPerTeam >= 1
-                            && maxPlayersPerTeam <= 24) {
-                        if (args.length >= 3) {
-                            world = Bukkit.getWorld(args[2]);
-                        }
-
-                        if (world != null) {
-                            if (!greger.isRegistered(world)) {
-                                register(cs, world, maxPlayersPerTeam);
-                            } else {
-                                MessageManager.sendCommandSender(cs,
-                                        ManageLanguageFile.GAME_WORLD_ALREADY_REGISTERED
-                                        .getText(Localizer.getLocale(player))
-                                        .replace("%cmd_usage%", usage)
-                                );
-                            }
-                        } else {
-                            MessageManager.sendCommandSender(cs,
-                                    MainLanguageFile.WORLD_NOT_EXIST
-                                    .getText(Localizer.getLocale(player))
-                            );
-                        }
-                    } else {
-                        MessageManager.sendCommandSender(cs,
-                                ManageLanguageFile.GAME_WORLD_INITIALIZE_MAX_PLAYERS
-                                .getText(Localizer.getLocale(player))
-                        );
-                    }
-                } else {
-                    MessageManager.sendCommandSender(cs,
-                            MainLanguageFile.INVALID_ARGUMENTS
-                            .getText(Localizer.getLocale(player))
-                    );
-                    MessageManager.sendCommandSender(cs,
-                            MainLanguageFile.COMMAND_USAGE
-                            .getText(Localizer.getLocale(player))
-                            .replace("%cmd_usage%", usage)
-                    );
-                }
-            } else {
+        if (args.length == 1 || !NumbersUtils.isInteger(args[1])) {
+            if (args.length == 1) {
                 MessageManager.sendCommandSender(cs,
                         MainLanguageFile.INSUFFICIENT_ARGUMENTS
-                        .getText(Localizer.getLocale(player))
-                        .replace("%cmd_usage%", usage)
+                        .getText(lang)
                 );
-                MessageManager.sendCommandSender(cs,
-                        MainLanguageFile.COMMAND_USAGE
-                        .getText(Localizer.getLocale(player))
-                        .replace("%cmd_usage%", usage)
-                );
-            }
-        } else if (args.length >= 3) {
-            if (NumbersUtils.isInteger(args[1])) {
-                int maxPlayersPerTeam = Integer.valueOf(args[1]);
-
-                if (maxPlayersPerTeam >= 1
-                        && maxPlayersPerTeam <= 24) {
-                    World world = Bukkit.getWorld(args[2]);
-
-                    if (world != null) {
-                        if (!greger.isRegistered(world)) {
-                            register(cs, world, maxPlayersPerTeam);
-                        } else {
-                            MessageManager.sendCommandSender(cs,
-                                    ManageLanguageFile.GAME_WORLD_ALREADY_REGISTERED
-                                    .getText(Langs.EN)
-                                    .replace("%cmd_usage%", usage)
-                            );
-                        }
-                    } else {
-                        MessageManager.sendCommandSender(cs,
-                                MainLanguageFile.WORLD_NOT_EXIST
-                                .getText(Langs.EN)
-                        );
-                    }
-                } else {
-                    MessageManager.sendCommandSender(cs,
-                            ManageLanguageFile.GAME_WORLD_INITIALIZE_MAX_PLAYERS
-                            .getText(Langs.EN)
-                    );
-                }
             } else {
                 MessageManager.sendCommandSender(cs,
                         MainLanguageFile.INVALID_ARGUMENTS
-                        .getText(Langs.EN)
-                );
-                MessageManager.sendCommandSender(cs,
-                        MainLanguageFile.COMMAND_USAGE
-                        .getText(Langs.EN).replace("%cmd_usage%", usage)
+                        .getText(lang)
                 );
             }
-        } else {
+            MessageManager.sendCommandSender(cs,
+                    MainLanguageFile.COMMAND_USAGE
+                    .getText(lang)
+                    .replace("%cmd_usage%", usage)
+            );
+        } else if (!(cs instanceof Player) && args.length == 2) {
             MessageManager.sendCommandSender(cs,
                     MainLanguageFile.MUST_BE_PLAYER
-                    .getText(Langs.EN)
+                    .getText(lang)
             );
             MessageManager.sendCommandSender(cs,
                     ManageLanguageFile.GAME_WORLD_REGISTER_CONSOLE
-                    .getText(Langs.EN)
-            );
-        }
-        return true;
-    }
-
-    private void register(CommandSender cs, World world,
-            int maxPlayersPerTeam) {
-        GamesRegisterer greger = Manager.getGamesRegisterer();
-        GamesRegisterer.GameRegisterResult result = greger
-                .registerGame(world, maxPlayersPerTeam);
-
-        Plugin plugin = PluginBase.INSTANCE.plugin();
-
-        if (!result.error) {
-            world.setMetadata(MetadataValues.GAME_INSTANCE.key,
-                    new FixedMetadataValue(plugin, result.gameinstance));
-
-            if (cs instanceof Player) {
-                MessageManager.sendCommandSender(cs,
-                        ManageLanguageFile.GAME_WORLD_REGISTERED
-                        .getText(Localizer.getLocale((Player) cs))
-                );
-            } else {
-                MessageManager.sendCommandSender(cs,
-                        ManageLanguageFile.GAME_WORLD_REGISTERED
-                        .getText(Langs.EN)
-                );
-            }
-        } else if (cs instanceof Player) {
-            MessageManager.sendCommandSender(
-                    cs,
-                    result.message.getText(Localizer.getLocale((Player) cs))
+                    .getText(lang)
             );
         } else {
-            MessageManager.sendCommandSender(
-                    cs,
-                    result.message.getText(Langs.EN)
-            );
+            maxPlayersPerTeam = Integer.valueOf(args[1]);
+            
+            if (maxPlayersPerTeam < 1 || maxPlayersPerTeam > 24) {
+                MessageManager.sendCommandSender(cs,
+                        ManageLanguageFile.GAME_WORLD_INITIALIZE_MAX_PLAYERS
+                        .getText(lang)
+                );
+            } else {
+                if (args.length >= 3) {
+                    world = Bukkit.getWorld(args[2]);
+                } else {
+                    Player player = (Player) cs;
+                    world = player.getWorld();
+                }
+
+                if (world == null) {
+                    MessageManager.sendCommandSender(cs,
+                            MainLanguageFile.WORLD_NOT_EXIST
+                            .getText(lang)
+                    );
+                } else if (world.hasMetadata(MetadataValues.GAME_INSTANCE.key)) {
+                    MessageManager.sendCommandSender(cs,
+                            ManageLanguageFile.GAME_WORLD_ALREADY_REGISTERED
+                            .getText(lang)
+                    );
+                } else {
+                    GamesRegisterer.GameRegisterResult result = greger
+                            .registerGame(world, maxPlayersPerTeam);
+
+                    if (!result.error) {
+                        GameInstance gi = result.gameinstance;
+                        world.setMetadata(MetadataValues.GAME_INSTANCE.key,
+                                new FixedMetadataValue(plugin, gi));
+                        greg.registerGame(gi);
+                    }
+
+                    MessageManager.sendCommandSender(cs,
+                            result.message
+                            .getText(lang)
+                    );
+                }
+            }
         }
+
+        return true;
     }
 }

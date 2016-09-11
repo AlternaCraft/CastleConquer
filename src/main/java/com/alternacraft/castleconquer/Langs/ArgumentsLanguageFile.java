@@ -23,31 +23,20 @@ import com.alternacraft.aclib.utils.StringsUtils;
 import java.util.HashMap;
 
 /**
- * This class creates, loads and manages the language file.
+ * This contains the arguments description text.
  *
  * @author AlternaCraft
  */
-public enum GameLanguageFile implements LangInterface {
+public enum ArgumentsLanguageFile implements LangInterface {
     // <editor-fold defaultstate="collapsed" desc="Language values">
-    GAME_SIGN_TEXT_UNINITIALIZED("&4Uninitialized"),
-    GAME_SIGN_TEXT_JOIN("&6Join to match"),
-    GAME_SIGN_PLACED("&2The game sign has been placed successfully!"),
-    GAME_SIGN_DELETED("&2The game sign has been deleted!"),
-    GAME_SIGN_ALREADY_PLACED("&2The game sign is already placed for this game instance!"),
-    GAME_JOINING_NOT_INITIALIZED("&4You cannot join to the game because it's not initialized!"),
-    GAME_ALREADY_IN_QUEUE("&4You are already waiting for playing! Use '/cc leave' to leave the current game"),
-    GAME_NOT_IN_QUEUE("&4You are not in any game queue!"),
-    GAME_JOINED_AS_ATTACKER("&2You joined the game queue as attacker"),
-    GAME_JOINED_AS_DEFENDER("&2You joined the game queue as defender"),
-    GAME_STARTING_COUNTDOWN("&6ATENTION! &eThe game will start in 5 seconds"),
-    GAME_COUNTDOWN("&6%t% &eseconds left to start the match!"),
-    GAME_COUNTDOWN_PLAYER_LEFT_QUEUE("&4The countdown has been cancelled due a player has disconnected the queue!"),
-    GAME_STARTED("&2The game started! Destroy the enemy!"),
-    GAME_LEFT_QUEUE("&4You left from the waiting queue of the game!"),
-    GAME_LEFT("&4You abandoned the game!"),
-    GAME_FINISHED("&2The game has been finished!"),
-    GAME_ATTACKERS_WON("&eThe &6attackers &ewon the game!"),
-    GAME_DEFENDERS_WON("&eThe &edefenders &ewon the game!");
+    INFO_COMMAND("Shows the basic of the plugin"),
+    REGISTER_WORLD_GAME("Registers a world as a game world"),
+    UNREGISTER_WORLD_GAME("Unregisters a world from being a game world"),
+    INITIALIZE_WORLD_GAME("Makes a world playable"),
+    UNINITIALIZE_WORLD_GAME("Makes a world unplayable"),
+    SET_FLAG("Sets the flag of the defensors or attackers"),
+    DELETE_FLAG("Deletes the flag of the defensors or attackers"),
+    LEAVE_GAME("Leaves from the current game");
     // </editor-fold>
 
     public final HashMap<Langs, String> locales = new HashMap();
@@ -57,7 +46,7 @@ public enum GameLanguageFile implements LangInterface {
      *
      * @param en English
      */
-    private GameLanguageFile(String en) {
+    private ArgumentsLanguageFile(String en) {
         this.locales.put(Langs.EN, en);
     }
 
@@ -75,4 +64,5 @@ public enum GameLanguageFile implements LangInterface {
 
         return (v == null) ? value : v;
     }
+
 }

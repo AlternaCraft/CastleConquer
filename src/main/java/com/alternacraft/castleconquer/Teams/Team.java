@@ -31,8 +31,10 @@ public class Team {
 
     private final List<TeamMember> members = new ArrayList<>();
     private final TeamType type;
+    private final TeamsManager tman;
 
-    public Team(TeamType type) {
+    public Team(TeamsManager tman, TeamType type) {
+        this.tman = tman;
         this.type = type;
     }
 
@@ -43,6 +45,28 @@ public class Team {
      */
     public final TeamType getTeamType() {
         return type;
+    }
+    
+    /**
+     * Returns the opponent Team object.
+     * 
+     * @return 
+     */
+    public Team getOpponentTeam() {
+        if(type.equals(TeamType.ATTACKERS)) {
+            return tman.getDefenders();
+        } else {
+            return tman.getAttackers();
+        }
+    }
+
+    /**
+     * Returns this Team manager.
+     *
+     * @return
+     */
+    public final TeamsManager getTeamManager() {
+        return tman;
     }
 
     /**
